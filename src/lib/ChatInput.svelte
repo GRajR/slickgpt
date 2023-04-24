@@ -103,7 +103,11 @@
 			if (event.data !== '[DONE]') {
 				// todo What's the correct type for this? It's not CreateChatCompletionResponse... maybe still missing in TypeDefs?
 				const completionResponse: any = JSON.parse(event.data);
-				const delta = completionResponse.choices[0].delta.content || '';
+
+				// If /completions -> completionResponse.choices[0].text
+				// If /chat/completions -> completionResponse.choices[0].delta.content
+				const delta = completionResponse.choices[0].delta ? completionResponse.choices[0].delta.content || '' : completionResponse.choices[0].text || '';
+
 				liveAnswerStore.update((store) => {
 					const answer = { ...store };
 					answer.content += delta;

@@ -48,6 +48,10 @@
   </ol>
 </details>
 
+## My mods on top of SlickGPT for testing other models
+
+Adding davinci model support. Davinci model is a more precise but more expensive and slower. I am exploring medical domain and need k-shot learning capability for fine-tuning models.
+
 ## About the project
 
 ![SlickGPT][slickgpt-screenshot]
