@@ -4,6 +4,7 @@ import GPT3Tokenizer from 'gpt3-tokenizer';
 import { ChatStorekeeper } from './chatStorekeeper';
 
 export enum OpenAiModel {
+	DaVinci = 'text-davinci-003',
 	Gpt35Turbo = 'gpt-3.5-turbo',
 	Gpt4 = 'gpt-4',
 	Gpt432k = 'gpt-4-32k'
@@ -33,6 +34,11 @@ export interface OpenAiModelStats {
 
 export const models: { [key in OpenAiModel]: OpenAiModelStats } = {
 	'gpt-3.5-turbo': {
+		maxTokens: 4096,
+		costPrompt: 0.002,
+		costCompletion: 0.002
+	},
+	'text-davinci-003': {
 		maxTokens: 4096,
 		costPrompt: 0.002,
 		costCompletion: 0.002

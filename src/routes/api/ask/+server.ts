@@ -4,6 +4,8 @@ import type { RequestHandler } from './$types';
 import type { OpenAiSettings } from '$misc/openai';
 import { error } from '@sveltejs/kit';
 import { getErrorMessage, throwIfUnset } from '$misc/error';
+import { OpenAiModel } from '$misc/openai';
+import axios from 'axios';
 
 // this tells Vercel to run this function as https://vercel.com/docs/concepts/functions/edge-functions
 export const config: Config = {
@@ -13,6 +15,9 @@ export const config: Config = {
 export const POST: RequestHandler = async ({ request, fetch }) => {
 	try {
 		const requestData = await request.json();
+
+		// console.log(`OpenAI API request object ${requestData}`);
+
 		throwIfUnset('request data', requestData);
 
 		const messages: ChatCompletionRequestMessage[] = requestData.messages;
@@ -30,34 +35,36 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
 			stream: true
 		};
 
-		// We'll disable the old API for now as it handles stuff quite differently..
-		// OpenAI will probably make old models available for the new API soon.
-		//
-		// const apiUrl =
-		// 	settings.model === OpenAiModel.Gpt35Turbo
-		// 		? 'https://api.openai.com/v1/chat/completions'
-		// 		: 'https://api.openai.com/v1/completions';
-		const apiUrl = 'https://api.openai.com/v1/chat/completions';
+		// const apiUrl = 'https://api.openai.com/v1/chat/completions';
+		const isDaVinci = (settings.model === OpenAiModel.DaVinci);
+		const apiUrl = isDaVinci ? 'https://api.openai.com/v1/completions' : 'https://api.openai.com/v1/chat/completions';
+		const body = isDaVinci ? {
+			"prompt": messages[messages.length - 1].content,
+			...settings,
+			"stream": true,
+		} : completionOpts;
 
-		const response = await fetch(apiUrl, {
-			headers: {
-				Authorization: `Bearer ${openAiKey}`,
-				'Content-Type': 'application/json'
-			},
-			method: 'POST',
-			body: JSON.stringify(completionOpts)
-		});
+		// console.log('OpenAI body being sent === ',apiUrl,  body);
 
-		if (!response.ok) {
-			const err = await response.json();
-			throw err.error;
+		try {
+			const response = await axios.post(apiUrl, body, {
+				headers: {
+					Authorization: `Bearer ${openAiKey}`,
+					'Content-Type': 'application/json'	
+				}
+			});
+			// console.log('OpenAI API response', response.data);
+
+			return new Response(response.data, {
+				headers: {
+					'Content-Type': 'text/event-stream'
+				}
+			});	
 		}
-
-		return new Response(response.body, {
-			headers: {
-				'Content-Type': 'text/event-stream'
-			}
-		});
+		catch (err) {
+			console.log('OpenAI API error', err);
+			throw err;
+		}
 	} catch (err) {
 		throw error(500, getErrorMessage(err));
 	}
